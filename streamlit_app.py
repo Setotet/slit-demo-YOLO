@@ -35,6 +35,7 @@ import pandas as pd
 import numpy as np
 import os, urllib, cv2
 
+os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = "0"
 st.set_page_config(layout="wide", page_title="YOLO", page_icon=":taxi:")
 
 # Streamlit encourages well-structured code, like starting execution in a main() function.
