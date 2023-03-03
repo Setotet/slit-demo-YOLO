@@ -50,7 +50,9 @@ def main():
         download_file(filename)
 
     # Once we have the dependencies, add a selector for the app mode on the sidebar.
-    st.sidebar.title("What to do")
+
+    # st.sidebar.title("What to do")
+
     app_mode = st.sidebar.selectbox("Choose the app mode",
         ["Show instructions", "Run the app", "Show the source code"])
     if app_mode == "Show instructions":
@@ -149,14 +151,15 @@ def run_the_app():
         "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)" % (overlap_threshold, confidence_threshold), object_type)
 
     # Add boxes for objects on the image. These are the boxes for the ground image.
-    boxes = metadata[metadata.frame == selected_frame].drop(columns=["frame"])
-    draw_image_with_boxes(image, boxes, "Ground Truth",
-        "**Human-annotated data** (frame `%i`)" % selected_frame_index, object_type)
+    # boxes = metadata[metadata.frame == selected_frame].drop(columns=["frame"])
+    # draw_image_with_boxes(image, boxes, "Ground Truth",
+    #     "**Human-annotated data** (frame `%i`)" % selected_frame_index, object_type)
 
 
 # This sidebar UI is a little search engine to find certain object types.
 def frame_selector_ui(summary):
-    st.sidebar.markdown("# Frame")
+
+    # st.sidebar.markdown("# Frame")
 
     # The user can pick which type of object to search for.
     object_type = st.sidebar.selectbox("What to detect and highlight in RED?", summary.columns, 2)
@@ -189,9 +192,11 @@ def get_selected_frames(summary, label, min_elts, max_elts):
 
 # This sidebar UI lets the user select parameters for the YOLO object detector.
 def object_detector_ui():
-    st.sidebar.markdown("# Model")
-    confidence_threshold = st.sidebar.slider("Confidence threshold", 0.0, 1.0, 0.5, 0.01)
-    overlap_threshold = st.sidebar.slider("Overlap threshold", 0.0, 1.0, 0.3, 0.01)
+
+    # st.sidebar.markdown("# Model")
+
+    confidence_threshold = st.sidebar.slider("YOLO confidence threshold", 0.0, 1.0, 0.5, 0.01)
+    overlap_threshold = st.sidebar.slider("YOLO overlap threshold", 0.0, 1.0, 0.3, 0.01)
     return confidence_threshold, overlap_threshold
 
 # Draws an image with boxes overlayed to indicate the presence of cars, pedestrians etc.
@@ -219,7 +224,7 @@ def draw_image_with_boxes(image, boxes, header, description, object_type):
             image_with_boxes[int(ymin):int(ymax),int(xmin):int(xmax),:] /= 2
 
     # Draw the header and image.
-    st.subheader(header)
+    # st.subheader(header)
     st.markdown(description)
     st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
 
