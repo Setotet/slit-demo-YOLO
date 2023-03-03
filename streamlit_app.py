@@ -35,6 +35,8 @@ import pandas as pd
 import numpy as np
 import os, urllib, cv2
 
+from pdb import set_trace
+
 os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = ""
 st.set_page_config(layout="wide", page_title="YOLO", page_icon=":taxi:")
 
@@ -129,7 +131,7 @@ def run_the_app():
     # st.write('## Metadata', metadata[:1000], '## Summary', summary[:1000])
 
     # Draw the UI elements to search for objects (pedestrians, cars, etc.)
-    selected_frame_index, selected_frame = frame_selector_ui(summary)
+    selected_frame_index, selected_frame, object_type = frame_selector_ui(summary)
     if selected_frame_index == None:
         st.error("No frames fit the criteria. Please select different label or number.")
         return
@@ -144,12 +146,12 @@ def run_the_app():
     # Get the boxes for the objects detected by YOLO by running the YOLO model.
     yolo_boxes = yolo_v3(image, confidence_threshold, overlap_threshold)
     draw_image_with_boxes(image, yolo_boxes, "Real-time Computer Vision",
-        "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)" % (overlap_threshold, confidence_threshold))
+        "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)" % (overlap_threshold, confidence_threshold), object_type)
 
     # Add boxes for objects on the image. These are the boxes for the ground image.
     boxes = metadata[metadata.frame == selected_frame].drop(columns=["frame"])
     draw_image_with_boxes(image, boxes, "Ground Truth",
-        "**Human-annotated data** (frame `%i`)" % selected_frame_index)
+        "**Human-annotated data** (frame `%i`)" % selected_frame_index, object_type)
 
 
 # This sidebar UI is a little search engine to find certain object types.
@@ -157,13 +159,13 @@ def frame_selector_ui(summary):
     st.sidebar.markdown("# Frame")
 
     # The user can pick which type of object to search for.
-    object_type = st.sidebar.selectbox("Search for which objects?", summary.columns, 2)
+    object_type = st.sidebar.selectbox("What to detect and highlight in RED?", summary.columns, 2)
 
-    # The user can select a range for how many of the selected objecgt should be present.
-    min_elts, max_elts = st.sidebar.slider("How many %ss (select a range)?" % object_type, 0, 25, [10, 20])
+    # The user can select a range for how many of the selected objects should be present.
+    min_elts, max_elts = st.sidebar.slider("How many %ss (select a range)?" % object_type, 0, 25, [0, 10])
     selected_frames = get_selected_frames(summary, object_type, min_elts, max_elts)
     if len(selected_frames) < 1:
-        return None, None
+        return None, None, object_type
 
     # Choose a frame out of the selected frames.
     selected_frame_index = st.sidebar.slider("Choose a frame (index)", 0, len(selected_frames) - 1, 0)
@@ -178,7 +180,7 @@ def frame_selector_ui(summary):
     st.sidebar.altair_chart(alt.layer(chart, vline))
 
     selected_frame = selected_frames[selected_frame_index]
-    return selected_frame_index, selected_frame
+    return selected_frame_index, selected_frame, object_type
 
 # Select frames based on the selection in the sidebar
 @st.cache_resource
@@ -193,19 +195,28 @@ def object_detector_ui():
     return confidence_threshold, overlap_threshold
 
 # Draws an image with boxes overlayed to indicate the presence of cars, pedestrians etc.
-def draw_image_with_boxes(image, boxes, header, description):
+def draw_image_with_boxes(image, boxes, header, description, object_type):
     # Superpose the semi-transparent object detection boxes.    # Colors for the boxes
+    # LABEL_COLORS = {
+    #     "car": [255, 0, 0],
+    #     "pedestrian": [0, 255, 0],
+    #     "truck": [0, 0, 255],
+    #     "trafficLight": [255, 255, 0],
+    #     "biker": [255, 0, 255],
+    # }
+    RED = [255, 0, 0]
     LABEL_COLORS = {
-        "car": [255, 0, 0],
-        "pedestrian": [0, 255, 0],
-        "truck": [0, 0, 255],
-        "trafficLight": [255, 255, 0],
-        "biker": [255, 0, 255],
+        "car": RED,
+        "pedestrian": RED,
+        "truck": RED,
+        "traffic light": RED,
+        "biker": RED,
     }
     image_with_boxes = image.astype(np.float64)
     for _, (xmin, ymin, xmax, ymax, label) in boxes.iterrows():
-        image_with_boxes[int(ymin):int(ymax),int(xmin):int(xmax),:] += LABEL_COLORS[label]
-        image_with_boxes[int(ymin):int(ymax),int(xmin):int(xmax),:] /= 2
+        if label == object_type:
+            image_with_boxes[int(ymin):int(ymax),int(xmin):int(xmax),:] += LABEL_COLORS[label]
+            image_with_boxes[int(ymin):int(ymax),int(xmin):int(xmax),:] /= 2
 
     # Draw the header and image.
     st.subheader(header)
@@ -270,7 +281,7 @@ def yolo_v3(image, confidence_threshold, overlap_threshold):
         3: 'biker',
         5: 'truck',
         7: 'truck',
-        9: 'trafficLight'
+        9: 'traffic light'
     }
     xmin, xmax, ymin, ymax, labels = [], [], [], [], []
     if len(indices) > 0:
