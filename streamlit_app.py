@@ -38,7 +38,7 @@ import os, urllib, cv2
 from pdb import set_trace
 
 os.environ["STREAMLIT_BROWSER_GATHER_USAGE_STATS"] = ""
-st.set_page_config(layout="wide", page_title="YOLO", page_icon=":taxi:")
+st.set_page_config(layout="wide", page_title="YOLO v3 オブジェクト検出", page_icon=":taxi:")
 
 # Streamlit encourages well-structured code, like starting execution in a main() function.
 def main():
@@ -53,14 +53,14 @@ def main():
 
     # st.sidebar.title("What to do")
 
-    app_mode = st.sidebar.selectbox("Choose the app mode",
-        ["Show instructions", "Run the app", "Show the source code"])
-    if app_mode == "Show instructions":
-        st.sidebar.success('To continue select "Run the app".')
-    elif app_mode == "Show the source code":
+    app_mode = st.sidebar.selectbox("アプリの実行モード",
+        ["インストラクションを表示する", "アプリを実行する", "ソース・コードを表示する"])
+    if app_mode == "インストラクションを表示する":
+        st.sidebar.success('"アプリを実行する" モードを選択するとアプリが走ります。')
+    elif app_mode == "ソース・コードを表示する":
         readme_text.empty()
         st.code(get_file_content_as_string("streamlit_app.py"))
-    elif app_mode == "Run the app":
+    elif app_mode == "アプリを実行する":
         readme_text.empty()
         run_the_app()
 
@@ -76,7 +76,7 @@ def download_file(file_path):
     # These are handles to two visual elements to animate.
     weights_warning, progress_bar = None, None
     try:
-        weights_warning = st.warning("Downloading %s..." % file_path)
+        weights_warning = st.warning("ダウンロード中 %s..." % file_path)
         progress_bar = st.progress(0)
         with open(file_path, "wb") as output_file:
             with urllib.request.urlopen(EXTERNAL_DEPENDENCIES[file_path]["url"]) as response:
@@ -91,7 +91,7 @@ def download_file(file_path):
                     output_file.write(data)
 
                     # We perform animation by overwriting the elements.
-                    weights_warning.warning("Downloading %s... (%6.2f/%6.2f MB)" %
+                    weights_warning.warning("ダウンロード中 %s... (%6.2f/%6.2f MB)" %
                         (file_path, counter / MEGABYTES, length / MEGABYTES))
                     progress_bar.progress(min(counter / length, 1.0))
 
@@ -115,11 +115,11 @@ def run_the_app():
     def create_summary(metadata):
         one_hot_encoded = pd.get_dummies(metadata[["frame", "label"]], columns=["label"])
         summary = one_hot_encoded.groupby(["frame"]).sum().rename(columns={
-            "label_biker": "biker",
-            "label_car": "car",
-            "label_pedestrian": "pedestrian",
-            "label_trafficLight": "traffic light",
-            "label_truck": "truck"
+            "label_biker": "自転車", # "biker",
+            "label_car": "乗用車", # "car",
+            "label_pedestrian": "歩行者", # "pedestrian",
+            "label_trafficLight": "信号機", # "traffic light",
+            "label_truck": "トラック" # "truck"
         })
         return summary
 
@@ -147,8 +147,10 @@ def run_the_app():
 
     # Get the boxes for the objects detected by YOLO by running the YOLO model.
     yolo_boxes = yolo_v3(image, confidence_threshold, overlap_threshold)
-    draw_image_with_boxes(image, yolo_boxes, "Real-time Computer Vision",
-        "**YOLO v3 Model** (overlap `%3.1f`) (confidence `%3.1f`)" % (overlap_threshold, confidence_threshold), object_type)
+    draw_image_with_boxes(image, yolo_boxes, "YOLO(v3) オブジェクト検出パラメータ",
+        "%s: %i コマ, 重複度 `%3.1f`, 確度 `%3.1f`" % \
+            (object_type, selected_frame_index, overlap_threshold, confidence_threshold),
+        object_type)
 
     # Add boxes for objects on the image. These are the boxes for the ground image.
     # boxes = metadata[metadata.frame == selected_frame].drop(columns=["frame"])
@@ -162,16 +164,16 @@ def frame_selector_ui(summary):
     # st.sidebar.markdown("# Frame")
 
     # The user can pick which type of object to search for.
-    object_type = st.sidebar.selectbox("What to detect and highlight in RED?", summary.columns, 2)
+    object_type = st.sidebar.selectbox("検出するオブジェクトを指定してください。", summary.columns, 1)
 
     # The user can select a range for how many of the selected objects should be present.
-    min_elts, max_elts = st.sidebar.slider("How many %ss (select a range)?" % object_type, 0, 25, [0, 10])
+    min_elts, max_elts = st.sidebar.slider("最大いくつの%sを赤色で表示しますか？" % object_type, 0, 25, [0, 10])
     selected_frames = get_selected_frames(summary, object_type, min_elts, max_elts)
     if len(selected_frames) < 1:
         return None, None, object_type
 
     # Choose a frame out of the selected frames.
-    selected_frame_index = st.sidebar.slider("Choose a frame (index)", 0, len(selected_frames) - 1, 0)
+    selected_frame_index = st.sidebar.slider(f"動画の{len(selected_frames):,}コマの1つを指定してください。", 0, len(selected_frames) - 1, 1005)
 
     # Draw an altair chart in the sidebar with information on the frame.
     objects_per_frame = summary.loc[selected_frames, object_type].reset_index(drop=True).reset_index()
@@ -195,8 +197,8 @@ def object_detector_ui():
 
     # st.sidebar.markdown("# Model")
 
-    confidence_threshold = st.sidebar.slider("YOLO confidence threshold", 0.0, 1.0, 0.5, 0.01)
-    overlap_threshold = st.sidebar.slider("YOLO overlap threshold", 0.0, 1.0, 0.3, 0.01)
+    confidence_threshold = st.sidebar.slider("最低、どの程度の確かさで検出するかを指定してください", 0.0, 1.0, 0.5, 0.01)
+    overlap_threshold = st.sidebar.slider("どの程度重複するオブジェクトまで検出するかを指定してくさい", 0.0, 1.0, 0.3, 0.01)
     return confidence_threshold, overlap_threshold
 
 # Draws an image with boxes overlayed to indicate the presence of cars, pedestrians etc.
@@ -211,11 +213,11 @@ def draw_image_with_boxes(image, boxes, header, description, object_type):
     # }
     RED = [255, 0, 0]
     LABEL_COLORS = {
-        "car": RED,
-        "pedestrian": RED,
-        "truck": RED,
-        "traffic light": RED,
-        "biker": RED,
+        "乗用車": RED,
+        "歩行者": RED,
+        "トラック": RED,
+        "信号機": RED,
+        "自転車": RED,
     }
     image_with_boxes = image.astype(np.float64)
     for _, (xmin, ymin, xmax, ymax, label) in boxes.iterrows():
@@ -280,13 +282,13 @@ def yolo_v3(image, confidence_threshold, overlap_threshold):
 
     # Map from YOLO labels to Udacity labels.
     UDACITY_LABELS = {
-        0: 'pedestrian',
-        1: 'biker',
-        2: 'car',
-        3: 'biker',
-        5: 'truck',
-        7: 'truck',
-        9: 'traffic light'
+        0: '歩行者',
+        1: '自転車',
+        2: '乗用車',
+        3: '自転車',
+        5: 'トラック',
+        7: 'トラック',
+        9: '信号機'
     }
     xmin, xmax, ymin, ymax, labels = [], [], [], [], []
     if len(indices) > 0:

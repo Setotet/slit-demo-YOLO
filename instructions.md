@@ -1,7 +1,8 @@
-# Streamlit Demo: The Udacity Self-driving Car Image Browser
+# オブジェクト検出深層学習モデル
 
-This project demonstrates the [Udacity self-driving-car dataset](https://github.com/udacity/self-driving-car) and [YOLO object detection](https://pjreddie.com/darknet/yolo) into an interactive [Streamlit](https://streamlit.io) app.
+このアプリは、[Udacity self-driving-car dataset](https://github.com/udacity/self-driving-car) 動画データと [YOLO object detection](https://pjreddie.com/darknet/yolo) オブジェクト検出深層学習モデルを使い、[Streamlit](https://streamlit.io) で表示するもので、Streamlitデモ用サンプル・コードを日本語化したものです。
 
-The complete demo is [implemented in less than 300 lines of Python](https://github.com/Setotet/slit-demo-YOLO/blob/master/streamlit_app.py) and illustrates all the major building blocks of Streamlit.
+オブジェクト検出モデルは、ドローンで撮影した農地の画像データ、収穫した作物や[家畜の動画データ](https://aifarms.illinois.edu/)を使ってトレーニングすることにより、様々な目的に使うことができます。
 
-👈 **Please select _Run the App_ in the sidebar to start.  Tap ">" at top-left corner to pull out the sidebar.**
+
+👈 アプリの実行モードから、「アプリを実行する」を選択し、試してみてください。 サイド・バーが表示されていない場合は左上の ">" をタップしサイド・バーを表示してください。
