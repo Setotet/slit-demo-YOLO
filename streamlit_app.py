@@ -231,7 +231,6 @@ def draw_image_with_boxes(image, boxes, header, description, object_type):
     st.image(image_with_boxes.astype(np.uint8), use_column_width=True)
 
 # Download a single file and make its content available as a string.
-@st.cache_resource(show_spinner=False)
 def get_file_content_as_string(path):
     url = 'https://raw.githubusercontent.com/Setotet/slit-demo-YOLO/master/' + path
     response = urllib.request.urlopen(url)
